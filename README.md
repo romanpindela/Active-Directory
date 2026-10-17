@@ -17,12 +17,18 @@ Active-Directory/
 │   ├── Add-UsersToGroup.ps1             # Main PowerShell group membership automation script
 │   ├── nowi_ksiegowi.txt                # Ready-to-use sample user logins file
 │   └── README.md                        # Full technical documentation and Entra ID setup guide
+├── Disable-StaleComputers/              # Bulk disabling or removal of stale AD & Entra ID computer accounts (>180 days)
+│   ├── Disable-StaleComputers.ps1       # Main PowerShell stale computers cleanup script
+│   └── README.md                        # Full technical documentation and Entra ID setup guide
 ├── Get-InactiveUsersReport/             # Security audit report of inactive AD & Entra ID user accounts (>90 days)
 │   ├── Get-InactiveUsersReport.ps1      # Main PowerShell security auditing script
 │   └── README.md                        # Full technical documentation and Entra ID setup guide
 ├── New-ADUsersFromCSV/                  # Bulk Active Directory & Entra ID user provisioning from CSV
 │   ├── New-ADUsersFromCSV.ps1           # Main PowerShell automation script
 │   ├── uzytkownicy.csv                  # Ready-to-use sample CSV user import template
+│   └── README.md                        # Full technical documentation and Entra ID setup guide
+├── Reset-UserPassword/                  # Emergency user password reset for Local AD & Cloud Entra ID
+│   ├── Reset-UserPassword.ps1           # Main PowerShell emergency password reset script
 │   └── README.md                        # Full technical documentation and Entra ID setup guide
 └── README.md                            # Root repository index and script catalog
 ```
@@ -105,6 +111,58 @@ Active-Directory/
 
   # 4. Bulk add users to a Cloud Microsoft Entra ID group
   .\Add-UsersToGroup\Add-UsersToGroup.ps1 -Group "Dzial_Ksiegowosci" -UsersFile .\Add-UsersToGroup\nowi_ksiegowi.txt -Mode Cloud -UpnSuffix "firma.pl"
+  ```
+
+---
+
+### 4. [**Disable-StaleComputers**](Disable-StaleComputers/README.md)
+* **Script:** [`Disable-StaleComputers/Disable-StaleComputers.ps1`](Disable-StaleComputers/Disable-StaleComputers.ps1)
+* **Author:** Roman Pindela (`roman.pindela@gmail.com`)
+* **Version:** 1.2.0
+* **Description:** Automates bulk disabling or permanent removal of stale computer accounts (workstations and cloud endpoints) that have not reported their presence in the domain or cloud tenant for an extended period (default: `180` days).
+  * **Dual Directory Support (`-Mode Local | Cloud | Both`):** Cleans up stale computers in Local Active Directory (`Get-ADComputer -Filter {PasswordLastSet -lt $StareDni}` with `Disable-ADAccount` / `Set-ADComputer` / `Remove-ADComputer`) and/or Cloud Microsoft Entra ID (`Get-MgDevice`, `Update-MgDevice`, `Remove-MgDevice` via Microsoft Graph SDK).
+  * **Unattended / Non-Interactive Entra ID Authentication:** Supports App-Only authentication via Client Secret (`-TenantId`, `-ClientId`, `-ClientSecret`) or X.509 Certificate (`-CertificateThumbprint`) with `Device.ReadWrite.All` and `Directory.ReadWrite.All` permissions.
+  * **Built-In Safety Guardrails:** Automatically protects Domain Controllers (`PrimaryGroupID 516`), excludes Windows Server OS accounts by default (unless `-IncludeServers` is specified), supports exclusion lists (`-ExcludeComputers`), and optionally moves disabled computers to a Quarantine OU (`-TargetOU`) while stamping their AD `Description` (`-StampDescription`).
+  * **Standards Compliant:** Displays help when launched without parameters (`-h` / `-Help`), performs language-independent SID UAC auto-elevation (`S-1-5-32-544` for Polish `Administratorzy` and English `Administrators`), exports a UTF-8 CSV report, and writes detailed audit logs to `C:\Logs\<yyyyMMdd_HHmmss>-Disable-StaleComputers-<ComputerName>-<UserName>.logs`.
+* **Quick Start:**
+  ```powershell
+  # 1. Unblock the script after downloading from GitHub
+  Unblock-File -Path .\Disable-StaleComputers\Disable-StaleComputers.ps1
+
+  # 2. Display help & Entra ID non-interactive setup instructions
+  .\Disable-StaleComputers\Disable-StaleComputers.ps1 -h
+
+  # 3. Disable Local Active Directory computers inactive for > 180 days
+  .\Disable-StaleComputers\Disable-StaleComputers.ps1 -Run
+
+  # 4. Disable Cloud Microsoft Entra ID devices inactive for > 180 days
+  .\Disable-StaleComputers\Disable-StaleComputers.ps1 -Mode Cloud -StaleDays 180 -Action Disable
+  ```
+
+---
+
+### 5. [**Reset-UserPassword**](Reset-UserPassword/README.md)
+* **Script:** [`Reset-UserPassword/Reset-UserPassword.ps1`](Reset-UserPassword/Reset-UserPassword.ps1)
+* **Author:** Roman Pindela (`roman.pindela@gmail.com`)
+* **Version:** 1.2.0
+* **Description:** Primary emergency / rescue PowerShell script for immediately resetting a forgotten user password to a temporary password and enforcing a mandatory password change at first logon (`ChangePasswordAtLogon = $true`).
+  * **Dual Directory Support (`-Mode Local | Cloud | Both`):** Resets user passwords in Local Active Directory (`Set-ADAccountPassword -Reset $true` & `Set-ADUser -ChangePasswordAtLogon $true`) and/or Cloud Microsoft Entra ID (`Update-MgUser -PasswordProfile` via Microsoft Graph SDK).
+  * **Interactive & Automated Modes:** Supports interactive `Read-Host` / `Read-Host -AsSecureString` rescue prompts (`-Interactive`), parameterized execution (`-Login`, `-NewPassword`), cryptographic random temporary password generation (`-GenerateRandomPassword`), and automatic account unlocking (`-UnlockAccount`).
+  * **Unattended / Non-Interactive Entra ID Authentication:** Supports App-Only authentication via Client Secret (`-TenantId`, `-ClientId`, `-ClientSecret`) or X.509 Certificate (`-CertificateThumbprint`) with `UserAuthenticationMethod.ReadWrite.All`, `User.ReadWrite.All`, and `Directory.Read.All` permissions.
+  * **Standards Compliant:** Displays help when launched without parameters (`-h` / `-Help`), performs language-independent SID UAC auto-elevation (`S-1-5-32-544` for Polish `Administratorzy` and English `Administrators`), displays a real-time `Write-Progress` bar, and writes detailed audit logs to `C:\Logs\<yyyyMMdd_HHmmss>-Reset-UserPassword-<ComputerName>-<UserName>.logs`.
+* **Quick Start:**
+  ```powershell
+  # 1. Unblock the script after downloading from GitHub
+  Unblock-File -Path .\Reset-UserPassword\Reset-UserPassword.ps1
+
+  # 2. Display help & Entra ID non-interactive setup instructions
+  .\Reset-UserPassword\Reset-UserPassword.ps1 -h
+
+  # 3. Interactive emergency password reset in Local Active Directory
+  .\Reset-UserPassword\Reset-UserPassword.ps1 -Interactive
+
+  # 4. Reset user password in Cloud Microsoft Entra ID
+  .\Reset-UserPassword\Reset-UserPassword.ps1 -Login "jkowalski@firma.pl" -Mode Cloud
   ```
 
 ---
