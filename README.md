@@ -13,6 +13,13 @@ A collection of enterprise-grade PowerShell provisioning and directory administr
 
 ```text
 Active-Directory/
+├── Add-UsersToGroup/                    # Bulk group membership assignment for Local AD & Cloud Entra ID
+│   ├── Add-UsersToGroup.ps1             # Main PowerShell group membership automation script
+│   ├── nowi_ksiegowi.txt                # Ready-to-use sample user logins file
+│   └── README.md                        # Full technical documentation and Entra ID setup guide
+├── Get-InactiveUsersReport/             # Security audit report of inactive AD & Entra ID user accounts (>90 days)
+│   ├── Get-InactiveUsersReport.ps1      # Main PowerShell security auditing script
+│   └── README.md                        # Full technical documentation and Entra ID setup guide
 ├── New-ADUsersFromCSV/                  # Bulk Active Directory & Entra ID user provisioning from CSV
 │   ├── New-ADUsersFromCSV.ps1           # Main PowerShell automation script
 │   ├── uzytkownicy.csv                  # Ready-to-use sample CSV user import template
@@ -46,6 +53,58 @@ Active-Directory/
 
   # 4. Bulk provision users in local Active Directory
   .\New-ADUsersFromCSV\New-ADUsersFromCSV.ps1 -CsvPath .\New-ADUsersFromCSV\uzytkownicy.csv -TargetOU "OU=Pracownicy,DC=firma,DC=local"
+  ```
+
+---
+
+### 2. [**Get-InactiveUsersReport**](Get-InactiveUsersReport/README.md)
+* **Script:** [`Get-InactiveUsersReport/Get-InactiveUsersReport.ps1`](Get-InactiveUsersReport/Get-InactiveUsersReport.ps1)
+* **Author:** Roman Pindela (`roman.pindela@gmail.com`)
+* **Version:** 1.2.0
+* **Description:** Enterprise security auditing script that identifies enabled user accounts that have not logged into the domain or cloud tenant for more than N days (default: `90` days) and exports the findings to a UTF-8 CSV report in `C:\Logs\<datagodzina>Get-InactiveUsersReport<nazwaserweraad>nieaktywni_uzytkownicy.csv`.
+  * **Dual Directory Support (`-Provider AD | EntraID | Both`):** Audits On-Premises Active Directory (`Get-ADUser` with `LastLogonDate -lt $DataGraniczna -and Enabled -eq $true`) and/or Cloud Microsoft Entra ID (`Get-MgUser -Property SignInActivity`).
+  * **Unattended / Non-Interactive Entra ID Authentication:** Supports App-Only authentication via Client Secret (`-TenantId`, `-ClientId`, `-ClientSecret`) or X.509 Certificate (`-CertificateThumbprint`) with `AuditLog.Read.All`, `User.Read.All`, and `Directory.Read.All` permissions.
+  * **Flexible Scoping & Output:** Supports Organizational Unit scoping (`-SearchBase`), Domain Controller targeting (`-DomainController`), department filtering (`-Department`), never-logged-on accounts (`-IncludeNeverLoggedOn`), and classic 3-column CSV output (`-SimpleCsv`).
+  * **Standards Compliant:** Displays help when launched without parameters (`-h` / `-Help`), performs language-independent SID UAC auto-elevation (`S-1-5-32-544` for Polish `Administratorzy` and English `Administrators`), and writes detailed execution logs to `C:\Logs\<yyyyMMdd_HHmmss>-Get-InactiveUsersReport-<ComputerName>-<UserName>.logs`.
+* **Quick Start:**
+  ```powershell
+  # 1. Unblock the script after downloading from GitHub
+  Unblock-File -Path .\Get-InactiveUsersReport\Get-InactiveUsersReport.ps1
+
+  # 2. Display help & Entra ID non-interactive setup instructions
+  .\Get-InactiveUsersReport\Get-InactiveUsersReport.ps1 -h
+
+  # 3. Audit Local Active Directory for enabled accounts inactive > 90 days
+  .\Get-InactiveUsersReport\Get-InactiveUsersReport.ps1 -Run
+
+  # 4. Audit Cloud Microsoft Entra ID for accounts inactive > 90 days
+  .\Get-InactiveUsersReport\Get-InactiveUsersReport.ps1 -Provider EntraID -InactiveDays 90
+  ```
+
+---
+
+### 3. [**Add-UsersToGroup**](Add-UsersToGroup/README.md)
+* **Script:** [`Add-UsersToGroup/Add-UsersToGroup.ps1`](Add-UsersToGroup/Add-UsersToGroup.ps1)
+* **Author:** Roman Pindela (`roman.pindela@gmail.com`)
+* **Version:** 1.2.0
+* **Description:** Automates bulk assignment of multiple users (e.g., from a plain text file containing logins such as `nowi_ksiegowi.txt`, a CSV file, or a command-line list) to a target security or distribution group (such as `Dzial_Ksiegowosci` for shared network drive access).
+  * **Dual Directory Support (`-Mode Local | Cloud | Both`):** Assigns users to groups in Local Active Directory (`Add-ADGroupMember`) and/or Cloud Microsoft Entra ID (`New-MgGroupMemberByRef` via Microsoft Graph SDK).
+  * **Unattended / Non-Interactive Entra ID Authentication:** Supports App-Only authentication via Client Secret (`-TenantId`, `-ClientId`, `-ClientSecret`) or X.509 Certificate (`-CertificateThumbprint`) with `GroupMember.ReadWrite.All`, `Group.ReadWrite.All`, and `User.Read.All` permissions.
+  * **Idempotent Pre-Flight Checks:** Validates group and user existence, optionally creates missing groups (`-CreateGroupIfMissing`), skips already-assigned members (`AlreadyMember`), and supports dry-run simulation (`-DryRun`) and CSV reporting (`-ExportReportPath`).
+  * **Standards Compliant:** Displays help when launched without parameters (`-h` / `-Help`), performs language-independent SID UAC auto-elevation (`S-1-5-32-544` for Polish `Administratorzy` and English `Administrators`), displays a real-time `Write-Progress` bar, and writes detailed audit logs to `C:\Logs\<yyyyMMdd_HHmmss>-Add-UsersToGroup-<ComputerName>-<UserName>.logs`.
+* **Quick Start:**
+  ```powershell
+  # 1. Unblock the script after downloading from GitHub
+  Unblock-File -Path .\Add-UsersToGroup\Add-UsersToGroup.ps1
+
+  # 2. Display help & Entra ID non-interactive setup instructions
+  .\Add-UsersToGroup\Add-UsersToGroup.ps1 -h
+
+  # 3. Bulk add users from a text file to a Local Active Directory group
+  .\Add-UsersToGroup\Add-UsersToGroup.ps1 -Group "Dzial_Ksiegowosci" -UsersFile .\Add-UsersToGroup\nowi_ksiegowi.txt
+
+  # 4. Bulk add users to a Cloud Microsoft Entra ID group
+  .\Add-UsersToGroup\Add-UsersToGroup.ps1 -Group "Dzial_Ksiegowosci" -UsersFile .\Add-UsersToGroup\nowi_ksiegowi.txt -Mode Cloud -UpnSuffix "firma.pl"
   ```
 
 ---
