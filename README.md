@@ -30,6 +30,10 @@ Active-Directory/
 ├── Reset-UserPassword/                  # Emergency user password reset for Local AD & Cloud Entra ID
 │   ├── Reset-UserPassword.ps1           # Main PowerShell emergency password reset script
 │   └── README.md                        # Full technical documentation and Entra ID setup guide
+├── User-LogonScript/                    # PowerShell User Logon Script & AD GPO / Cloud Intune deployment toolkit
+│   ├── User-LogonScript.ps1             # Main PowerShell logon script execution & GPO/Cloud deployment script
+│   ├── LogonScript.ps1                  # Ready-to-use standalone SYSVOL PowerShell logon script payload
+│   └── README.md                        # Step-by-step GPO Logon Script guide & Entra ID documentation
 └── README.md                            # Root repository index and script catalog
 ```
 
@@ -163,6 +167,31 @@ Active-Directory/
 
   # 4. Reset user password in Cloud Microsoft Entra ID
   .\Reset-UserPassword\Reset-UserPassword.ps1 -Login "jkowalski@firma.pl" -Mode Cloud
+  ```
+
+---
+
+### 6. [**User-LogonScript**](User-LogonScript/README.md)
+* **Script:** [`User-LogonScript/User-LogonScript.ps1`](User-LogonScript/User-LogonScript.ps1) & [`User-LogonScript/LogonScript.ps1`](User-LogonScript/LogonScript.ps1)
+* **Author:** Roman Pindela (`roman.pindela@gmail.com`)
+* **Version:** 1.2.0
+* **Description:** End-to-end PowerShell User Logon Script and Group Policy (GPO) / Cloud Intune deployment toolkit that maps persistent network drives (`New-PSDrive -Persist`, e.g., `Z:` $\rightarrow$ `\\serwer\zasob`), logs logon verification to `C:\Temp\LogonStatus.txt` (`"Zalogowano pomyślnie dnia $(Get-Date)"`) and `C:\Logs`, copies `LogonScript.ps1` to the domain `SYSVOL` share (`\\twojadomena.local\sysvol\twojadomena.local\scripts`), configures GPO PowerShell User Logon Scripts and GPO `ExecutionPolicy`, and verifies execution with `gpupdate /force`.
+  * **Dual Directory Support (`-Mode Local | Cloud | Both`):** Supports On-Premises Active Directory (`SYSVOL` + `GroupPolicy` + group-filtered drive mapping) and Cloud Microsoft Entra ID / Intune (`Invoke-MgGraphRequest` for Entra ID group checks and Intune `deviceManagementScripts` deployment).
+  * **Unattended / Non-Interactive Entra ID Authentication:** Supports App-Only authentication via Client Secret (`-TenantId`, `-ClientId`, `-ClientSecret`) or X.509 Certificate (`-CertificateThumbprint`) with `User.Read.All`, `GroupMember.Read.All`, and `DeviceManagementConfiguration.ReadWrite.All` permissions.
+  * **Standards Compliant:** Displays help and the complete 4-step GPO Logon Script guide when launched without parameters (`-h` / `-Help`), performs language-independent SID UAC auto-elevation (`S-1-5-32-544` for Polish `Administratorzy` and English `Administrators`), and writes detailed audit logs to `C:\Logs\<yyyyMMdd_HHmmss>-User-LogonScript-<ComputerName>-<UserName>.logs`.
+* **Quick Start:**
+  ```powershell
+  # 1. Unblock the scripts after downloading from GitHub
+  Unblock-File -Path .\User-LogonScript\User-LogonScript.ps1
+
+  # 2. Display help, 4-step GPO tutorial & Entra ID setup instructions
+  .\User-LogonScript\User-LogonScript.ps1 -h
+
+  # 3. Execute User Logon Script (map Z: -> \\serwer\zasob & log to C:\Temp\LogonStatus.txt)
+  .\User-LogonScript\User-LogonScript.ps1 -DriveLetter "Z:" -NetworkPath "\\serwer\zasob"
+
+  # 4. Deploy LogonScript.ps1 to SYSVOL, create/link GPO & configure GPO ExecutionPolicy
+  .\User-LogonScript\User-LogonScript.ps1 -DeployGPO -DomainName "twojadomena.local" -GpoName "Skrypty_Logowania_GPO" -TargetOU "OU=Pracownicy,DC=twojadomena,DC=local" -ConfigureExecutionPolicy -Force
   ```
 
 ---
