@@ -1,0 +1,8 @@
+# Sample user logins list for Add-UsersToGroup.ps1
+# Group example: Dzial_Ksiegowosci
+# Specify one SamAccountName or UserPrincipalName per line:
+jkowalski
+anowak
+pwisniewski
+mkaminska
+tzelazny
